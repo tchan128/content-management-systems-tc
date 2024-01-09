@@ -25,88 +25,77 @@ inquirer
     .prompt ([
       {
         type: "checkbox",
-        choices: ["View All Employees", "Add Employee", "Update Employee Role", "View All Roles", "Add Role", "View All Department", "Add Department", "Quit"],
+        choices: ["View All Employees", "Add Employee", "Update Employee Role", "View All Roles", "Add Role", "View All Departments", "Add Department", "Quit"],
         message: "What would you like to do?",
         name: "action",
     },
     ])
     .then((responses) => {
-      const systemAction = responses;
+      const systemAction = responses.action;
+      // let splitResponse = (JSON.stringify(systemAction)).split(",");
+      // console.log(splitResponse)
 
-      if (systemAction.action[0] === "View All Employees") {
+      // If user selects "Quit" it will end inquirer
+      if (systemAction[0] === "Quit") {
+        process.exit();
+      
+      // If user selects "View All Employees" it view the employee table
+
+      } else if (systemAction[0] === "View All Employees") {
+        console.log(systemAction.action);
         const sql = `SELECT * FROM employee`
         db.query(sql, function (err, result) {
           if (err) throw err;
           console.table(result);
         });
-      } else if (systemAction.action[0] === "View All Departments") {
+      
+      // If user selects "View All Departments" it view the department table
+  
+      } else if (systemAction[0] === "View All Departments") {
         const sql = `SELECT * FROM department`
         db.query(sql, function (err, result) {
           if (err) throw err;
           console.table(result);
         });
-      } else if (systemAction.action[0] === "View All Roles") {
+
+      // If user selects "View All Roles" it view the role table
+
+      } else if (systemAction[0] === "View All Roles") {
         const sql = `SELECT * FROM role`
         db.query(sql, function (err, result) {
           if (err) throw err;
           console.table(result);
         });
+
+      // If user selects "Add Department" they can add a new department
+
+      } else if (systemAction[0] === "Add Department") {
+
+        inquirer
+          .prompt ([
+            {
+              type: "input",
+              message: "What is the name of the department?",
+              name: "department",
+          },
+          ])
+          .then((responses) => {
+            const dep = JSON.stringify(responses.department)
+            const sql = `INSERT INTO department (id, name)
+            VALUES (${dep})`
+
+            db.query(sql, function (err, result) {
+              if (err) throw err;
+              });
+            })
       }
     });
-
-// View all departments
-app.get('/departments', (req, res) => {
-    const sql = `SELECT * FROM department`;
-    
-    db.query(sql, (err, rows) => {
-      if (err) {
-        res.status(500).json({ error: err.message });
-         return;
-      }
-      res.json({
-        message: 'success',
-        data: rows
-      });
-    });
-  });
-
-// View all role
-app.get('/roles', (req, res) => {
-  const sql = `SELECT * FROM role`;
-  
-  db.query(sql, (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-       return;
-    }
-    res.json({
-      message: 'success',
-      data: rows
-    });
-  });
-});
-
-// View all employees
-app.get('/employees', (req, res) => {
-  const sql = `SELECT * FROM employee`;
-  
-  db.query(sql, (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-       return;
-    }
-    res.json({
-      message: 'success',
-      data: rows
-    });
-  });
-});
 
 // Add a new department
 
 app.post('/api/departments', ({ body }, res) => {
   const sql = `INSERT INTO department (id, name)
-    VALUES (?)`;
+  VALUES (?)`;
   const params = [body.department];
   
   db.query(sql, params, (err, result) => {
