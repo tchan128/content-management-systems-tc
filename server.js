@@ -99,7 +99,8 @@ inquirer
 
       } else if (systemAction === "View All Employees") {
         console.log(systemAction.action);
-        const sql = `SELECT * FROM employee`
+        const sql = `SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, employee.manager_id
+        FROM ((employee INNER JOIN role ON role.id = employee.role_id) INNER JOIN department ON role.department_id = department.id)`
         db.query(sql, function (err, result) {
           if (err) throw err;
           console.table(result);
@@ -120,7 +121,8 @@ inquirer
       // If user selects "View All Roles" it view the role table
 
       } else if (systemAction === "View All Roles") {
-        const sql = `SELECT * FROM role`
+        const sql = `SELECT role.id, role.title, department.name, role.salary FROM role
+        INNER JOIN department ON role.department_id = department.id;`
         db.query(sql, function (err, result) {
           if (err) throw err;
           console.table(result);
