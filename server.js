@@ -84,6 +84,20 @@ const addEmployee = [
   }, 
   ]
 
+  const updateEmployee = [
+  {
+      type: "list",
+      message: "Which employee's role do you want to update?",
+      choices: [], // EMPLOYEE
+      name: "employee",
+  },
+  {
+    type: "list",
+    message: "Which role do you want to assign the selected employee?",
+    choices: [], // ROLE
+    name: "role",
+  }
+  ]
 
 inquirer
     .prompt (dbActions)
@@ -104,9 +118,7 @@ inquirer
         db.query(sql, function (err, result) {
           if (err) throw err;
           console.table(result);
-        })
-        
-        ;
+        });
       
       // If user selects "View All Departments" it view the department table
   
@@ -181,7 +193,25 @@ inquirer
             db.query(sql, function (err, result) {
               if (err) throw err;
               });
-              console.log(`Success! Added ${first_name} ${last_name} to the database`)
+              console.log(`Success! Added ${first_name} ${last_name} to the database`);
+            })
+      
+      // If user chooses "Update Employee Role" they can update an employee
+
+      } else if (systemAction === "Update Employee Role") {
+
+        inquirer
+          .prompt (updateEmployee)
+          .then((responses) => {
+            const employee = JSON.stringify(responses.employee);
+            const role = JSON.stringify(responses.role);
+            const sql = `INSERT INTO role (first_name, last_name, role_id, manager_id) 
+            VALUES (${title}, ${dep}, ${salary})` // CHANGE THIS
+
+            db.query(sql, function (err, result) {
+              if (err) throw err;
+              });
+              console.log(`Success! Updated ${employee} role to ${role}`);
             })
       }
 
@@ -189,27 +219,3 @@ inquirer
 
 
 
-
-// // Add a new employee
-
-// app.post('/api/employees', ({ body }, res) => {
-//   const sql = `INSERT INTO employee (id, first_name, last_name, role_id, manager_id)
-//     VALUES (?)`;
-//   const params = [body.employee];
-  
-//   db.query(sql, params, (err, result) => {
-//     if (err) {
-//       res.status(400).json({ error: err.message });
-//       return;
-//     }
-//     res.json({
-//       message: 'success',
-//       data: body
-//     });
-//   });
-// });
-
-// app.listen(PORT, () => {
-//     console.log(`Server running on port ${PORT}`);
-// });
-  
