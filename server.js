@@ -199,21 +199,26 @@ function dbStart() {
             }
             ])
             .then((responses) => {
-              const title = JSON.stringify(responses.title);
-              const salary = JSON.stringify(responses.salary);
-              const dep = JSON.stringify(responses.department);
-              const sql = `INSERT INTO role (title, department_id, salary)
-              VALUES (${title}, ${dep}, ${salary})`
 
-              db.query(sql, function (err, result) {
+              const dept = `SELECT id FROM department WHERE name='${responses.department}';`
+
+              db.query(dept, function (err, result) {
                 if (err) throw err;
+                const title = JSON.stringify(responses.title);
+                const salary = JSON.stringify(responses.salary);
+                const sql = `INSERT INTO role (title, department_id, salary)
+                VALUES (${title}, ${JSON.stringify(result[0].id)}, ${salary})`
+  
+                db.query(sql, function (err, result) {
+                  if (err) throw err;
+                  });
+  
+                  console.log(`Success! Added ${title} to the database`)
+  
+                  // Start inquirer again
+  
+                  dbStart();
                 });
-
-                console.log(`Success! Added ${title} to the database`)
-
-                // Start inquirer again
-
-                dbStart();
               });
           });
 
