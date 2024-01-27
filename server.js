@@ -123,7 +123,7 @@ function dbStart() {
         // If user selects "View All Departments" it view the department table
     
         } else if (systemAction === "View All Departments") {
-          const sql = `SELECT * FROM department FOR JSON PATH;`
+          const sql = `SELECT * FROM department;`
 
           db.query(sql, function (err, result) {
             if (err) throw err;
@@ -174,8 +174,30 @@ function dbStart() {
 
         } else if (systemAction === "Add Role") {
 
+          const curDept = `SELECT name FROM department;`;
+
+          db.query(curDept, function (err, result) {
+            if (err) throw err;
+
           inquirer
-            .prompt (addRole)
+            .prompt ([
+            {
+                type: "input",
+                message: "What is the name of the role?",
+                name: "title",
+            },
+            {
+              type: "input",
+              message: "What is the salary of the role?",
+              name: "salary",
+            },          
+            {
+              type: "list",
+              choices: result,
+              message: "What department does the role belong to?",
+              name: "department",
+            }
+            ])
             .then((responses) => {
               const title = JSON.stringify(responses.title);
               const salary = JSON.stringify(responses.salary);
@@ -192,7 +214,8 @@ function dbStart() {
                 // Start inquirer again
 
                 dbStart();
-              })
+              });
+          });
 
         // If user choses "Add Employee" they can add a new employee 
               
