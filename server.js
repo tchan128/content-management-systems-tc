@@ -3,13 +3,6 @@ const inquirer = require(`inquirer`);
 // Import and require mysql2
 const mysql = require('mysql');
 
-// const PORT = process.env.PORT || 3001;
-// const app = express();
-
-// Express middleware
-// app.use(express.urlencoded({ extended: true }));
-// app.use(express.json());
-
 // Connect to database
 const db = mysql.createConnection(
   {
@@ -99,123 +92,157 @@ const addEmployee = [
   }
   ]
 
-inquirer
-    .prompt (dbActions)
-    .then((responses) => {
-      const systemAction = responses.action;
 
-      // If user selects "Quit" it will end inquirer
+function dbStart() {
+  inquirer
+      .prompt (dbActions)
+      .then((responses) => {
+        const systemAction = responses.action;
 
-      if (systemAction[0] === "Quit") {
-        process.exit();
-      
-      // If user selects "View All Employees" it view the employee table
+        // If user selects "Quit" it will end inquirer
 
-      } else if (systemAction === "View All Employees") {
-        console.log(systemAction.action);
-        const sql = `SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, employee.manager_id
-        FROM ((employee INNER JOIN role ON role.id = employee.role_id) INNER JOIN department ON role.department_id = department.id)`
-        db.query(sql, function (err, result) {
-          if (err) throw err;
-          console.table(result);
-        });
-      
-      // If user selects "View All Departments" it view the department table
-  
-      } else if (systemAction === "View All Departments") {
-        const sql = `SELECT * FROM department`
+        if (systemAction === "Quit") {
+          process.exit();
+        
+        // If user selects "View All Employees" it view the employee table
 
-        db.query(sql, function (err, result) {
-          if (err) throw err;
-          console.table(result);
-        });
+        } else if (systemAction === "View All Employees") {
 
-      // If user selects "View All Roles" it view the role table
+          const sql = `SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, employee.manager_id
+          FROM ((employee INNER JOIN role ON role.id = employee.role_id) INNER JOIN department ON role.department_id = department.id)`;
 
-      } else if (systemAction === "View All Roles") {
-        const sql = `SELECT role.id, role.title, department.name, role.salary FROM role
-        INNER JOIN department ON role.department_id = department.id;`
-        db.query(sql, function (err, result) {
-          if (err) throw err;
-          console.table(result);
-        });
+          db.query(sql, function (err, result) {
+            if (err) throw err;
+            console.table(result);
 
-      // If user selects "Add Department" they can add a new department
+            // Start inquirer again  
 
-      } else if (systemAction === "Add Department") {
+            dbStart();
+          });
+        
+        // If user selects "View All Departments" it view the department table
+    
+        } else if (systemAction === "View All Departments") {
+          const sql = `SELECT * FROM department FOR JSON PATH;`
 
-        inquirer
-          .prompt (addDep)
-          .then((responses) => {
-            const dep = JSON.stringify(responses.department)
-            const sql = `INSERT INTO department (name)
-            VALUES (${dep})`
+          db.query(sql, function (err, result) {
+            if (err) throw err;
+            console.table(result);
 
-            db.query(sql, function (err, result) {
-              if (err) throw err;
+            // Start inquirer again  
+
+            dbStart();
+          });
+
+        // If user selects "View All Roles" it view the role table
+
+        } else if (systemAction === "View All Roles") {
+          const sql = `SELECT role.id, role.title, department.name, role.salary FROM role
+          INNER JOIN department ON role.department_id = department.id;`
+
+          db.query(sql, function (err, result) {
+            if (err) throw err;
+            console.table(result);
+
+            // Start inquirer again
+
+            dbStart();
+          });
+
+        // If user selects "Add Department" they can add a new department
+
+        } else if (systemAction === "Add Department") {
+
+          inquirer
+            .prompt (addDep)
+            .then((responses) => {
+              const dep = JSON.stringify(responses.department)
+              const sql = `INSERT INTO department (name)
+              VALUES (${dep})`
+
+              db.query(sql, function (err, result) {
+                if (err) throw err;
               });
-              console.log(`Success! Added ${dep} to the database`)
+                console.log(`Success! Added ${dep} to the database`)
+
+                // Start inquirer again 
+
+                dbStart();
             })
 
-      // If user selects "Add Role" they can add a new role      
+        // If user selects "Add Role" they can add a new role      
 
-      } else if (systemAction === "Add Role") {
+        } else if (systemAction === "Add Role") {
 
-        inquirer
-          .prompt (addRole)
-          .then((responses) => {
-            const title = JSON.stringify(responses.title);
-            const salary = JSON.stringify(responses.salary);
-            const dep = JSON.stringify(responses.department);
-            const sql = `INSERT INTO role (title, department_id, salary)
-            VALUES (${title}, ${dep}, ${salary})`
+          inquirer
+            .prompt (addRole)
+            .then((responses) => {
+              const title = JSON.stringify(responses.title);
+              const salary = JSON.stringify(responses.salary);
+              const dep = JSON.stringify(responses.department);
+              const sql = `INSERT INTO role (title, department_id, salary)
+              VALUES (${title}, ${dep}, ${salary})`
 
-            db.query(sql, function (err, result) {
-              if (err) throw err;
-              });
-              console.log(`Success! Added ${title} to the database`)
-            })
+              db.query(sql, function (err, result) {
+                if (err) throw err;
+                });
 
-      // If user choses "Add Employee" they can add a new employee 
-            
-      } else if (systemAction === "Add Employee") {
+                console.log(`Success! Added ${title} to the database`)
 
-        inquirer
-          .prompt (addEmployee)
-          .then((responses) => {
-            const first_name = JSON.stringify(responses.first_name);
-            const last_name = JSON.stringify(responses.last_name);
-            const role = JSON.stringify(responses.role);
-            const manager = JSON.stringify(responses.manager);
-            const sql = `INSERT INTO role (first_name, last_name, role_id, manager_id)
-            VALUES (${title}, ${dep}, ${salary})`
+                // Start inquirer again
 
-            db.query(sql, function (err, result) {
-              if (err) throw err;
-              });
-              console.log(`Success! Added ${first_name} ${last_name} to the database`);
-            })
-      
-      // If user chooses "Update Employee Role" they can update an employee
+                dbStart();
+              })
 
-      } else if (systemAction === "Update Employee Role") {
+        // If user choses "Add Employee" they can add a new employee 
+              
+        } else if (systemAction === "Add Employee") {
 
-        inquirer
-          .prompt (updateEmployee)
-          .then((responses) => {
-            const employee = JSON.stringify(responses.employee);
-            const role = JSON.stringify(responses.role);
-            const sql = `INSERT INTO role (first_name, last_name, role_id, manager_id) 
-            VALUES (${title}, ${dep}, ${salary})` // CHANGE THIS
+          inquirer
+            .prompt (addEmployee)
+            .then((responses) => {
+              const first_name = JSON.stringify(responses.first_name);
+              const last_name = JSON.stringify(responses.last_name);
+              const role = JSON.stringify(responses.role);
+              const manager = JSON.stringify(responses.manager);
+              const sql = `INSERT INTO role (first_name, last_name, role_id, manager_id)
+              VALUES (${title}, ${dep}, ${salary})`
 
-            db.query(sql, function (err, result) {
-              if (err) throw err;
-              });
-              console.log(`Success! Updated ${employee} role to ${role}`);
-            })
-      }
+              db.query(sql, function (err, result) {
+                if (err) throw err;
+                });
+                console.log(`Success! Added ${first_name} ${last_name} to the database`);
 
-    });
+                // Start inquirer again
+
+                dbStart();
+              })
+        
+        // If user chooses "Update Employee Role" they can update an employee
+
+        } else if (systemAction === "Update Employee Role") {
+
+          inquirer
+            .prompt (updateEmployee)
+            .then((responses) => {
+              const employee = JSON.stringify(responses.employee);
+              const role = JSON.stringify(responses.role);
+              const sql = `INSERT INTO role (first_name, last_name, role_id, manager_id) 
+              VALUES (${title}, ${dep}, ${salary})` // CHANGE THIS
+
+              db.query(sql, function (err, result) {
+                if (err) throw err;
+                });
+                console.log(`Success! Updated ${employee} role to ${role}`);
+
+                // Start inquirer again
+
+                dbStart();
+              })
+        }
+
+      });
+};
 
 
-
+dbStart();
