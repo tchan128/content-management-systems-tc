@@ -35,19 +35,7 @@ const addDep = [
   }
 ]
 
-// Helper function to retrieve ID 
-
-function employeeID(name) {
-  const sql = `
-  SELECT id 
-  FROM employee
-  WHERE CONCAT(first_name, ' ', last_name)=${name}`
-  
-  db.query(sql, function (err, result) {
-    if (err) throw err;
-    return result
-  })
-};
+// Promise for getting role ID
 
 function roleID(role) {
   const sql = `
@@ -63,7 +51,7 @@ function roleID(role) {
 
 // Promise for getting employee list 
 
-function managerList() {
+function employeeList() {
   return new Promise((resolve, reject) => {
     const sql = `
     SELECT CONCAT(first_name, ' ', last_name) AS name
@@ -80,9 +68,9 @@ function managerList() {
   });
 };
 
-// Promise for getting manager ID
+// Promise for getting employee ID
 
-function managerID(name) {
+function employeeID(name) {
   return new Promise((resolve, reject) => {
     const first = (name.split(" "))[0] 
     const last = (name.split(" "))[1]
@@ -240,7 +228,7 @@ function dbStart() {
           const allRoles = `SELECT title FROM role;`;
 
           // Promise to make manager list
-          managerList()
+          employeeList()
           .then((response) => {
             // Querying all Roles to make role list
             db.query(allRoles, function (err, result) {
@@ -280,7 +268,7 @@ function dbStart() {
                   const first_name = JSON.stringify(responses.first_name);
                   const last_name = JSON.stringify(responses.last_name);
                   // New promise to get manager ID
-                  managerID(responses.manager)
+                  employeeID(responses.manager)
                   .then((response) => {
                     db.query(role, function (err, result) {
                       // Using new query of role ID as result and response as manager_ID
@@ -306,55 +294,57 @@ function dbStart() {
 
         } else if (systemAction === "Update Employee Role") {
 
-          const empRole = 
-          `SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee, role.title
-          FROM employee 
-          INNER JOIN role 
-          ON role.id = employee.role_id;`
+          const roleList = 
+          `SELECT title AS role FROM role;`
 
-          db.query(empRole, function (err, result) {
+          employeeList()
+          .then((response) => {
+            db.query(roleList, function (err, result) {
 
-            const employee = result.map(row => row.employee);
-            const role = result.map(row => row.title);
+              const role = result.map(row => row.role);
+  
+              inquirer
+                .prompt ([
+                {
+                  type: "list",
+                  message: "Which employee's role do you want to update?",
+                  choices: response,
+                  name: "employee",
+                },
+                {
+                  type: "list",
+                  message: "Which role do you want to assign the selected employee?",
+                  choices: role,
+                  name: "role",
+                }
+                ])
+                .then((responses) => {
+                  
+                  const role = `SELECT id FROM role WHERE title=${JSON.stringify(responses.role)};`
+                  employeeID(responses.employee)
+                  .then((response) => {
+                    db.query(role, function (err, result) {
+                      // Using new query of role ID as result and response as manager_ID
+                      if (err) throw err;
 
-            inquirer
-              .prompt ([
-              {
-                type: "list",
-                message: "Which employee's role do you want to update?",
-                choices: employee,
-                name: "employee",
-              },
-              {
-                type: "list",
-                message: "Which role do you want to assign the selected employee?",
-                choices: role,
-                name: "role",
-              }
-              ])
-              .then((responses) => {
-                
-                const  empID = employeeID(JSON.stringify(responses.employee));
-                const  titleID = roleID(JSON.stringify(responses.role));
+                      const sql = 
+                      `UPDATE employee
+                      SET role_id = ${JSON.stringify(result[0].id)}
+                      WHERE id=${JSON.stringify(response[0].id)}`
 
-                console.log(empID);
-                console.log(empID);
+                      db.query(sql, function (err, result) {
+                        if (err) throw err;
+                        console.log(`Success! Updated ${responses.employee} role to ${responses.role}`);
+                        // Start inquirer again
 
-                // const sql = 
-                // `UPDATE employee 
-                // SET employee.role_id = ${titleID}
-                // WHERE employee.id = ${empID}`
+                        dbStart();
+                      })
 
-                db.query(sql, function (err, result) {
-                  if (err) throw err;
+                    })
                   });
-                  console.log(`Success! Updated ${responses.employee} role to ${responses.role}`);
-
-                  // Start inquirer again
-
-                  dbStart();
-              })
-          });
+                })
+            });
+          })
         }
 
       });
