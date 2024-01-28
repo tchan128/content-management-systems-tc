@@ -61,6 +61,48 @@ function roleID(role) {
   })
 };
 
+// Promise for getting manager list 
+
+function managerList() {
+  return new Promise((resolve, reject) => {
+    const sql = `
+    SELECT CONCAT(m.first_name, ' ', m.last_name) AS manager
+    FROM employee e
+    LEFT JOIN employee m ON e.manager_id = m.id
+    WHERE m.id IS NOT NULL`;
+
+    db.query(sql, function (err, result) {
+      if (err) {
+        reject(err);
+      } else {
+        const managerList = result.map(row => row.manager);
+        resolve(managerList);
+      }
+    });
+  });
+};
+
+// Promise for getting manager ID
+
+function managerID(name) {
+  return new Promise((resolve, reject) => {
+    const first = (name.split(" "))[0] 
+    const last = (name.split(" "))[1]
+    const sql = 
+    `SELECT id FROM employee 
+    WHERE first_name="${first}"
+    AND last_name="${last}"`
+
+    db.query(sql, function (err, result) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(result);
+      }
+    })
+  })
+};
+
 function dbStart() {
   inquirer
       .prompt (dbActions)
@@ -148,7 +190,6 @@ function dbStart() {
           const curDept = `SELECT name FROM department;`;
 
           db.query(curDept, function (err, result) {
-            console.log(result)
             if (err) throw err;
 
           inquirer
@@ -198,59 +239,71 @@ function dbStart() {
               
         } else if (systemAction === "Add Employee") {
 
-          const allRoles = `SELECT title, salary FROM role;`;
+          const allRoles = `SELECT title FROM role;`;
 
-          db.query(allRoles, function (err, result) {
-            const roles = result.map(row => row.title);
-            const salary = result.map(row => row.salary)
-            if (err) throw err;
-
-            inquirer
-              .prompt ([
+          // Promise to make manager list
+          managerList()
+          .then((response) => {
+            // Querying all Roles to make role list
+            db.query(allRoles, function (err, result) {
+              // Getting title from each row
+              const roles = result.map(row => row.title);
+              if (err) throw err;
+              
+              inquirer
+                .prompt ([
+                  {
+                    type: "input",
+                    message: "What is the employee's first name?",
+                    name: "first_name",
+                },
                 {
                   type: "input",
-                  message: "What is the employee's first name?",
-                  name: "first_name",
-              },
-              {
-                type: "input",
-                message: "What is the employee's last name?",
-                name: "last_name",
-              },          
-              {
-                type: "list",
-                choices: roles,
-                message: "What is the employee's role?",
-                name: "title",
-              }, 
-              {
-                type: "list",
-                choices: salary, // DEPARTMENT 
-                message: "What is the employee's manager?",
-                name: "manager",
-              }, 
-              ])
-              .then((responses) => {
+                  message: "What is the employee's last name?",
+                  name: "last_name",
+                },          
+                {
+                  type: "list",
+                  choices: roles, // Using roles values
+                  message: "What is the employee's role?",
+                  name: "title",
+                }, 
+                {
+                  type: "list",
+                  choices: response, // Using response from manager list promise 
+                  message: "Who is the employee's manager?",
+                  name: "manager",
+                }, 
+                ])
+                .then((responses) => {
+  
+                  const role = `SELECT id FROM role WHERE title=${JSON.stringify(responses.title)};`
+                  // Extracting first name and last name of new employee
+                  const first_name = JSON.stringify(responses.first_name);
+                  const last_name = JSON.stringify(responses.last_name);
+                  // New promise to get manager ID
+                  managerID(responses.manager)
+                  .then((response) => {
+                    db.query(role, function (err, result) {
+                      // Using new query of role ID as result and response as manager_ID
+                      if (err) throw err;
 
-                const role = `SELECT id FROM role WHERE title='${responses.role}';`
+                      const sql = `INSERT INTO employee (first_name, last_name, role_id, manager_id)
+                      VALUES (${first_name}, ${last_name}, ${JSON.stringify(result[0].id)}, ${JSON.stringify(response[0].id)})`
 
-                db.query(sql, function (err, result) {
-                const first_name = JSON.stringify(responses.first_name);
-                const last_name = JSON.stringify(responses.last_name);
-                const manager = JSON.stringify(responses.manager);
-                const sql = `INSERT INTO employee (first_name, last_name, role_id, manager_id)
-                VALUES (${first_name}, ${last_name}, ${JSON.stringify(role[0].id)}, ${salary})`
+                      db.query(sql, function (err, result) {
+                        if (err) throw err;
+                        console.log(`Success! Added ${first_name} ${last_name} to the database`);
+                        // Start inquirer again
 
-                  if (err) throw err;
+                        dbStart();
+                      })
+
+                    })
                   });
-                  console.log(`Success! Added ${first_name} ${last_name} to the database`);
-
-                  // Start inquirer again
-
-                  dbStart();
                 })
-          });
-        
+              })
+          })
         // If user chooses "Update Employee Role" they can update an employee
 
         } else if (systemAction === "Update Employee Role") {
@@ -308,6 +361,5 @@ function dbStart() {
 
       });
       };
-
 
 dbStart();
