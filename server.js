@@ -58,6 +58,11 @@ function employeeList() {
 
 function employeeID(name) {
   return new Promise((resolve, reject) => {
+
+    if (name === "None") {
+      resolve(null)
+    }
+
     const first = (name.split(" "))[0] 
     const last = (name.split(" "))[1]
     const sql = 
@@ -94,7 +99,8 @@ function dbStart() {
           FROM (((employee e
           LEFT JOIN employee m ON e.manager_id = m.id)
           INNER JOIN role ON role.id = e.role_id) 
-          INNER JOIN department ON role.department_id = department.id)`;
+          INNER JOIN department ON role.department_id = department.id)
+          ORDER BY id`;
 
           db.query(sql, function (err, result) {
             if (err) throw err;
@@ -264,8 +270,12 @@ function dbStart() {
                       // Using new query of role ID as result and response as manager_ID
                       if (err) throw err;
 
+                      if (response != null) {
+                        response = `${JSON.stringify(response[0].id)}`
+                      }
+
                       const sql = `INSERT INTO employee (first_name, last_name, role_id, manager_id)
-                      VALUES (${first_name}, ${last_name}, ${JSON.stringify(result[0].id)}, ${JSON.stringify(response[0].id)})`
+                      VALUES (${first_name}, ${last_name}, ${JSON.stringify(result[0].id)}, ${response})`
 
                       db.query(sql, function (err, result) {
                         if (err) throw err;
