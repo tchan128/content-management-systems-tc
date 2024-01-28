@@ -65,6 +65,8 @@ In this project, a content management system is built to help users browse throu
 - When users `add department` they will be able to add a department into the database
 - When users `update employee information` they will be able to update an employee's role
 
+To see the system in action please visit this link: https://share.vidyard.com/watch/75dFu7jcika6n9Aa7FyveB?
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Visuals
