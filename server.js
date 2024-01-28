@@ -61,21 +61,19 @@ function roleID(role) {
   })
 };
 
-// Promise for getting manager list 
+// Promise for getting employee list 
 
 function managerList() {
   return new Promise((resolve, reject) => {
     const sql = `
-    SELECT CONCAT(m.first_name, ' ', m.last_name) AS manager
-    FROM employee e
-    LEFT JOIN employee m ON e.manager_id = m.id
-    WHERE m.id IS NOT NULL`;
+    SELECT CONCAT(first_name, ' ', last_name) AS name
+    FROM employee;`;
 
     db.query(sql, function (err, result) {
       if (err) {
         reject(err);
       } else {
-        const managerList = result.map(row => row.manager);
+        const managerList = result.map(row => row.name);
         resolve(managerList);
       }
     });
