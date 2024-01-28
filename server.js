@@ -216,6 +216,10 @@ function dbStart() {
           // Promise to make manager list
           employeeList()
           .then((response) => {
+            // Adding "None" to employee list
+
+            const empList = ["None", ...response] 
+
             // Querying all Roles to make role list
             db.query(allRoles, function (err, result) {
               // Getting title from each row
@@ -242,7 +246,7 @@ function dbStart() {
                 }, 
                 {
                   type: "list",
-                  choices: response, // Using response from manager list promise 
+                  choices: empList, // Using response from manager list promise 
                   message: "Who is the employee's manager?",
                   name: "manager",
                 }, 
