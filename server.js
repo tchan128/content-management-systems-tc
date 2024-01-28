@@ -35,20 +35,6 @@ const addDep = [
   }
 ]
 
-// Promise for getting role ID
-
-function roleID(role) {
-  const sql = `
-  SELECT id 
-  FROM role
-  WHERE title=${role}`
-  
-  db.query(sql, function (err, result) {
-    if (err) throw err;
-    return JSON.stringify(result)
-  })
-};
-
 // Promise for getting employee list 
 
 function employeeList() {
@@ -346,8 +332,7 @@ function dbStart() {
             });
           })
         }
-
       });
-      };
+};
 
 dbStart();
