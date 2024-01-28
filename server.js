@@ -35,20 +35,31 @@ const addDep = [
   }
 ]
 
-const updateEmployee = [
-  {
-      type: "list",
-      message: "Which employee's role do you want to update?",
-      choices: [], // EMPLOYEE
-      name: "employee",
-  },
-  {
-    type: "list",
-    message: "Which role do you want to assign the selected employee?",
-    choices: [], // ROLE
-    name: "role",
-  }
-]
+// Helper function to retrieve ID 
+
+function employeeID(name) {
+  const sql = `
+  SELECT id 
+  FROM employee
+  WHERE CONCAT(first_name, ' ', last_name)=${name}`
+  
+  db.query(sql, function (err, result) {
+    if (err) throw err;
+    return result
+  })
+};
+
+function roleID(role) {
+  const sql = `
+  SELECT id 
+  FROM role
+  WHERE title=${role}`
+  
+  db.query(sql, function (err, result) {
+    if (err) throw err;
+    return JSON.stringify(result)
+  })
+};
 
 function dbStart() {
   inquirer
@@ -137,6 +148,7 @@ function dbStart() {
           const curDept = `SELECT name FROM department;`;
 
           db.query(curDept, function (err, result) {
+            console.log(result)
             if (err) throw err;
 
           inquirer
@@ -186,9 +198,11 @@ function dbStart() {
               
         } else if (systemAction === "Add Employee") {
 
-          const allRoles = `SELECT title FROM role;`;
+          const allRoles = `SELECT title, salary FROM role;`;
 
           db.query(allRoles, function (err, result) {
+            const roles = result.map(row => row.title);
+            const salary = result.map(row => row.salary)
             if (err) throw err;
 
             inquirer
@@ -205,20 +219,20 @@ function dbStart() {
               },          
               {
                 type: "list",
-                choices: result,
+                choices: roles,
                 message: "What is the employee's role?",
-                name: "role",
+                name: "title",
               }, 
               {
                 type: "list",
-                choices: [], // DEPARTMENT 
+                choices: salary, // DEPARTMENT 
                 message: "What is the employee's manager?",
                 name: "manager",
               }, 
               ])
               .then((responses) => {
 
-                const role = `SELECT id FROM role WHERE name='${responses.role}';`
+                const role = `SELECT id FROM role WHERE title='${responses.role}';`
 
                 db.query(sql, function (err, result) {
                 const first_name = JSON.stringify(responses.first_name);
@@ -241,27 +255,59 @@ function dbStart() {
 
         } else if (systemAction === "Update Employee Role") {
 
-          inquirer
-            .prompt (updateEmployee)
-            .then((responses) => {
-              const employee = JSON.stringify(responses.employee);
-              const role = JSON.stringify(responses.role);
-              const sql = `INSERT INTO role (first_name, last_name, role_id, manager_id) 
-              VALUES (${title}, ${dep}, ${salary})` // CHANGE THIS
+          const empRole = 
+          `SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee, role.title
+          FROM employee 
+          INNER JOIN role 
+          ON role.id = employee.role_id;`
 
-              db.query(sql, function (err, result) {
-                if (err) throw err;
-                });
-                console.log(`Success! Updated ${employee} role to ${role}`);
+          db.query(empRole, function (err, result) {
 
-                // Start inquirer again
+            const employee = result.map(row => row.employee);
+            const role = result.map(row => row.title);
 
-                dbStart();
+            inquirer
+              .prompt ([
+              {
+                type: "list",
+                message: "Which employee's role do you want to update?",
+                choices: employee,
+                name: "employee",
+              },
+              {
+                type: "list",
+                message: "Which role do you want to assign the selected employee?",
+                choices: role,
+                name: "role",
+              }
+              ])
+              .then((responses) => {
+                
+                const  empID = employeeID(JSON.stringify(responses.employee));
+                const  titleID = roleID(JSON.stringify(responses.role));
+
+                console.log(empID);
+                console.log(empID);
+
+                // const sql = 
+                // `UPDATE employee 
+                // SET employee.role_id = ${titleID}
+                // WHERE employee.id = ${empID}`
+
+                db.query(sql, function (err, result) {
+                  if (err) throw err;
+                  });
+                  console.log(`Success! Updated ${responses.employee} role to ${responses.role}`);
+
+                  // Start inquirer again
+
+                  dbStart();
               })
+          });
         }
 
       });
-};
+      };
 
 
 dbStart();
